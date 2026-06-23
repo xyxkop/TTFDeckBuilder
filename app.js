@@ -36,6 +36,14 @@
     Leadership: '#9b59b6',
   };
 
+  const SKILL_TYPE_ICONS = {
+    Speed: 'icons/speed.png',
+    Accuracy: 'icons/accuracy.png',
+    Control: 'icons/control.png',
+    Strength: 'icons/strength.png',
+    Leadership: 'icons/leadership.png',
+  };
+
   const SET_COLORS = {
     'Base': { bg: '#ffffff', text: '#000000' },
     'Fusion': { bg: '#cc0000', text: '#ffffff' },
@@ -911,41 +919,58 @@
       div.appendChild(clubEl);
     }
 
-    // Position
+    // Bottom section: 3-column layout (stats | info | abilities)
+    const bottomEl = document.createElement('div');
+    bottomEl.className = 'card-bottom';
+
+    // Left column: Defence, Skill, Attack (stacked vertically)
+    const statsCol = document.createElement('div');
+    statsCol.className = 'card-stats-col';
+    statsCol.appendChild(buildStat('defence', card['Defence'] || '0'));
+    statsCol.appendChild(buildStat('skill', card['Skill'] || '0'));
+    statsCol.appendChild(buildStat('attack', card['Attack'] || '0'));
+    bottomEl.appendChild(statsCol);
+
+    // Middle column: Position, Energy, Skill Types (stacked vertically)
+    const infoCol = document.createElement('div');
+    infoCol.className = 'card-info-col';
+
     const posEl = document.createElement('div');
     posEl.className = 'card-position';
     posEl.textContent = POSITION_LABELS[card['Position']] || card['Position'];
-    div.appendChild(posEl);
+    infoCol.appendChild(posEl);
 
-    // Stats row
-    const statsEl = document.createElement('div');
-    statsEl.className = 'card-stats';
-    statsEl.appendChild(buildStat('energy', `\u26A1 ${card['Energy'] || '0'}`));
-    statsEl.appendChild(buildStat('defence', card['Defence'] || '0'));
-    statsEl.appendChild(buildStat('skill', card['Skill'] || '0'));
-    statsEl.appendChild(buildStat('attack', card['Attack'] || '0'));
-    div.appendChild(statsEl);
+    const energyEl = buildStat('energy', `\u26A1 ${card['Energy'] || '0'}`);
+    infoCol.appendChild(energyEl);
 
-    // Skill type pills
     const skillTypesEl = document.createElement('div');
     skillTypesEl.className = 'card-skill-types';
     [card['Skill Type #1'], card['Skill Type #2']].forEach(st => {
       if (st) {
-        const pill = document.createElement('span');
-        pill.className = 'skill-type-pill';
-        pill.textContent = st;
-        pill.style.background = SKILL_TYPE_COLORS[st] || '#555';
-        skillTypesEl.appendChild(pill);
+        const icon = document.createElement('img');
+        icon.className = 'skill-type-icon';
+        icon.src = SKILL_TYPE_ICONS[st] || '';
+        icon.alt = st;
+        skillTypesEl.appendChild(icon);
       }
     });
-    div.appendChild(skillTypesEl);
+    infoCol.appendChild(skillTypesEl);
+    bottomEl.appendChild(infoCol);
 
-    // Abilities
+    // Right column: Abilities
     const abilitiesEl = document.createElement('div');
     abilitiesEl.className = 'card-abilities';
     appendAbility(abilitiesEl, card['Ability 1 Title'], card['Ability 1 Text']);
     appendAbility(abilitiesEl, card['Ability 2 Title'], card['Ability 2 Text']);
-    div.appendChild(abilitiesEl);
+    bottomEl.appendChild(abilitiesEl);
+
+    div.appendChild(bottomEl);
+
+    // Card number (footer)
+    const cardNumEl = document.createElement('div');
+    cardNumEl.className = 'card-number';
+    cardNumEl.textContent = card['Card #'] || '';
+    div.appendChild(cardNumEl);
 
     return div;
   }
