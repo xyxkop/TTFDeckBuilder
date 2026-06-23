@@ -13,27 +13,12 @@
   const SHEET_CSV_URL =
     'https://docs.google.com/spreadsheets/d/e/2PACX-1vRnVPbikUcch1oZ7IFsKqH4K0kDHy6cHQuET5lHZrGrCTCXfWKiWSq-F5l4YXpXf2dNrqVZSjxFnWSr/pub?gid=0&single=true&output=csv';
 
-  const COLUMNS = [
-    'Set', 'License', 'Card #', 'First Name', 'Second Name', 'Club',
-    'Position', 'Skill Type #1', 'Skill Type #2', 'Energy', 'Defence',
-    'Skill', 'Attack', 'Ability 1 Title', 'Ability 1 Text',
-    'Ability 2 Title', 'Ability 2 Text', 'Parallels?', 'Omega?'
-  ];
-
   /** Special cards that are pre-made parallels in the spreadsheet */
   const SPECIAL_PARALLELS = {
     '651-PA': { parallel: '\u03B1/\u03B1', set: 'Shatterpoint', cardNum: '651' },
     '651-PO': { parallel: '\u03A9/\u03A9', set: 'Shatterpoint', cardNum: '651' },
     '686-PA': { parallel: '\u03B1/\u03B1', set: 'Storm', cardNum: '686' },
     '686-PO': { parallel: '\u03A9/\u03A9', set: 'Storm', cardNum: '686' },
-  };
-
-  const SKILL_TYPE_COLORS = {
-    Speed: '#e94560',
-    Accuracy: '#40916c',
-    Control: '#4a90d9',
-    Strength: '#f0c040',
-    Leadership: '#9b59b6',
   };
 
   const SKILL_TYPE_ICONS = {
@@ -138,6 +123,7 @@
   let sortField = 'Card #';
   let sortAsc = true;
   let includeParallels = false;
+  let clickThroughFilter = null; // { type: 'player'|'club'|'set', value: string }
 
   // ============================================================
   // DOM REFERENCES
@@ -147,6 +133,7 @@
 
   const cardCountEl       = $('card-count');
   const refreshBtn        = $('refresh-btn');
+  const backBtn           = $('back-btn');
   const themeToggleBtn    = $('theme-toggle-btn');
   const sortFieldSelect   = $('sort-field');
   const sortDirBtn        = $('sort-dir-btn');
@@ -170,6 +157,7 @@
   // Event listeners
   themeToggleBtn.addEventListener('click', toggleTheme);
   refreshBtn.addEventListener('click', loadSheet);
+  backBtn.addEventListener('click', exitClickThrough);
   sortFieldSelect.addEventListener('change', () => { sortField = sortFieldSelect.value; applyFilters(); });
   sortDirBtn.addEventListener('click', toggleSortDir);
   clearFiltersBtn.addEventListener('click', clearAllFilters);
@@ -383,8 +371,13 @@
       // Collapsible header
       const header = document.createElement('div');
       header.className = 'filter-section-header';
-      header.innerHTML = `<span class="filter-section-arrow">&#9662;</span> <span class="filter-section-title">${groupName}</span><span class="filter-section-badge"></span>`;
-      header.addEventListener('click', () => section.classList.toggle('collapsed'));
+      header.innerHTML = `<span class="filter-section-arrow">&#9662;</span> <span class="filter-section-title">${groupName}</span><span class="filter-section-badge"></span><button class="filter-section-reset" title="Clear group filters">&times;</button>`;
+      header.querySelector('.filter-section-title').addEventListener('click', () => section.classList.toggle('collapsed'));
+      header.querySelector('.filter-section-arrow').addEventListener('click', () => section.classList.toggle('collapsed'));
+      header.querySelector('.filter-section-reset').addEventListener('click', (e) => {
+        e.stopPropagation();
+        clearGroupFilters(groupName, section);
+      });
       section.appendChild(header);
 
       // Content
@@ -732,25 +725,64 @@
   // ============================================================
 
   function applyFilters() {
-    filteredCards = allCards.filter(card => {
-      // Exclude parallels if toggle is off
-      if (!includeParallels && card['Parallel'] !== 'Base') return false;
+    if (clickThroughFilter) {
+      // Click-through mode: bypass sidebar filters, only respect parallels toggle
+      filteredCards = allCards.filter(card => {
+        if (!includeParallels && card['Parallel'] !== 'Base') return false;
+        // Also respect parallel type filter if set
+        if (activeFilters['Parallel']) {
+          if (!activeFilters['Parallel'].values.includes(card['Parallel'])) return false;
+        }
+        return matchesClickThrough(card);
+      });
+    } else {
+      // Normal mode: apply all sidebar filters
+      filteredCards = allCards.filter(card => {
+        if (!includeParallels && card['Parallel'] !== 'Base') return false;
 
-      for (const col of Object.keys(activeFilters)) {
-        const filter = activeFilters[col];
-        if (!filter) continue;
+        for (const col of Object.keys(activeFilters)) {
+          const filter = activeFilters[col];
+          if (!filter) continue;
 
-        const def = FILTERS.find(f => f.column === col);
-        const cols = (def && def.multi) ? def.multi : [col];
+          const def = FILTERS.find(f => f.column === col);
+          const cols = (def && def.multi) ? def.multi : [col];
 
-        if (!matchesFilter(card, filter, cols, def)) return false;
-      }
-      return true;
-    });
+          if (!matchesFilter(card, filter, cols, def)) return false;
+        }
+        return true;
+      });
+    }
 
     sortCards();
     renderCards();
     updateFilterBadges();
+    backBtn.classList.toggle('hidden', !clickThroughFilter);
+  }
+
+  /** Match a card against the active click-through filter */
+  function matchesClickThrough(card) {
+    const ct = clickThroughFilter;
+    if (ct.type === 'player') {
+      const name = `${card['First Name'] || ''} ${card['Second Name'] || ''}`.trim();
+      return name === ct.value;
+    } else if (ct.type === 'club') {
+      return (card['Club'] || '') === ct.value;
+    } else if (ct.type === 'set') {
+      return (card['License'] || '') === ct.value.license && (card['Set'] || '') === ct.value.set;
+    }
+    return true;
+  }
+
+  /** Activate click-through mode */
+  function activateClickThrough(type, value) {
+    clickThroughFilter = { type, value };
+    applyFilters();
+  }
+
+  /** Exit click-through mode, return to normal filtered view */
+  function exitClickThrough() {
+    clickThroughFilter = null;
+    applyFilters();
   }
 
   /** Check if a card matches a single filter */
@@ -852,6 +884,27 @@
     applyFilters();
   }
 
+  function clearGroupFilters(groupName, section) {
+    // Remove active filters for all columns in this group
+    FILTERS.forEach(def => {
+      if ((def.group || 'Other') === groupName) {
+        delete activeFilters[def.column];
+      }
+    });
+
+    // Reset UI elements within this section
+    section.querySelectorAll('select').forEach(el => el.value = '');
+    section.querySelectorAll('input').forEach(el => {
+      if (el.type === 'checkbox') el.checked = false;
+      else el.value = '';
+    });
+    section.querySelectorAll('.multiselect-toggle').forEach(el => el.textContent = 'All');
+    section.querySelectorAll('.multiselect-wrapper').forEach(el => el.classList.remove('open'));
+    section.querySelectorAll('.tristate-item').forEach(el => el.dataset.state = 'none');
+
+    applyFilters();
+  }
+
   function updateFilterBadges() {
     const groupCounts = {};
     FILTERS.forEach(def => {
@@ -896,26 +949,41 @@
       div.appendChild(badge);
     }
 
-    // Set + License header (colored)
+    // Set + License header (colored, text clickable)
     const setEl = document.createElement('div');
     setEl.className = 'card-set';
     const setName = card['Set'] || '';
-    setEl.textContent = [card['License'], setName].filter(Boolean).join(' | ');
+    const license = card['License'] || '';
     const setColor = SET_COLORS[setName];
     if (setColor) { setEl.style.background = setColor.bg; setEl.style.color = setColor.text; }
+
+    const setTextSpan = document.createElement('span');
+    setTextSpan.className = 'clickable';
+    setTextSpan.textContent = [license, setName].filter(Boolean).join(' | ');
+    setTextSpan.addEventListener('click', () => activateClickThrough('set', { license, set: setName }));
+    setEl.appendChild(setTextSpan);
     div.appendChild(setEl);
 
-    // Player name
+    // Player name (text clickable)
     const nameEl = document.createElement('div');
     nameEl.className = 'card-name';
-    nameEl.textContent = `${card['First Name'] || ''} ${card['Second Name'] || ''}`.trim() || '(unnamed)';
+    const fullName = `${card['First Name'] || ''} ${card['Second Name'] || ''}`.trim() || '(unnamed)';
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'clickable';
+    nameSpan.textContent = fullName;
+    nameSpan.addEventListener('click', () => activateClickThrough('player', fullName));
+    nameEl.appendChild(nameSpan);
     div.appendChild(nameEl);
 
-    // Club
+    // Club (text clickable)
     if (card['Club']) {
       const clubEl = document.createElement('div');
       clubEl.className = 'card-club';
-      clubEl.textContent = card['Club'];
+      const clubSpan = document.createElement('span');
+      clubSpan.className = 'clickable';
+      clubSpan.textContent = card['Club'];
+      clubSpan.addEventListener('click', () => activateClickThrough('club', card['Club']));
+      clubEl.appendChild(clubSpan);
       div.appendChild(clubEl);
     }
 

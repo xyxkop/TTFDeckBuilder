@@ -62,6 +62,24 @@ header h1 {
   font-size: 0.8rem;
 }
 
+#back-btn {
+  background: #2255cc;
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+#back-btn.hidden {
+  display: none;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover {
+  text-decoration: underline;
+}
+
 #theme-toggle-btn {
   background: #e0e0e0;
   color: #333;
@@ -139,6 +157,23 @@ main {
   color: #2255cc;
 }
 
+#filter-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+#back-btn {
+  background: #2255cc;
+  color: #fff;
+  font-size: 0.75rem;
+  padding: 0.3rem 0.6rem;
+}
+
+#back-btn.hidden {
+  display: none;
+}
+
 #filters-container {
   display: flex;
   flex-direction: column;
@@ -173,6 +208,25 @@ main {
   font-size: 0.7rem;
   color: #e94560;
   font-weight: 400;
+}
+
+.filter-section-reset {
+  background: transparent;
+  color: #999;
+  font-size: 1rem;
+  padding: 0 0.3rem;
+  line-height: 1;
+  margin-left: auto;
+  display: none;
+}
+
+.filter-section-reset:hover {
+  color: #e94560;
+}
+
+.filter-section-badge:not(:empty) ~ .filter-section-reset,
+.filter-section-header:hover .filter-section-reset {
+  display: inline;
 }
 
 .filter-section-header:hover {
@@ -368,21 +422,6 @@ main {
   color: #c0392b;
 }
 
-.pills-select-all {
-  padding: 0.3rem 0.6rem;
-  border: 1px dashed #ccc;
-  border-radius: 4px;
-  background: transparent;
-  color: #888;
-  font-size: 0.7rem;
-  cursor: pointer;
-}
-
-.pills-select-all:hover {
-  border-color: #e94560;
-  color: #333;
-}
-
 #filter-actions {
   display: flex;
   gap: 0.5rem;
@@ -485,14 +524,6 @@ hr {
 .card-skill-types {
   display: flex;
   gap: 0.3rem;
-}
-
-.skill-type-pill {
-  font-size: 0.65rem;
-  font-weight: 600;
-  padding: 0.15rem 0.4rem;
-  border-radius: 3px;
-  color: #fff;
 }
 
 .card-abilities {
@@ -775,6 +806,11 @@ body.dark #refresh-btn,
 body.dark #header-filters button {
   background: #0f3460;
   color: #e0e0e0;
+}
+
+body.dark #back-btn {
+  background: #4a90d9;
+  color: #fff;
 }
 
 body.dark #clear-filters-btn {
