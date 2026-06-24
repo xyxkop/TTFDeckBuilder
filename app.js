@@ -509,6 +509,31 @@
       dropdown.appendChild(search);
     }
 
+    // Select All / Clear buttons
+    const actionsBar = document.createElement('div');
+    actionsBar.className = 'multiselect-actions';
+    const selectAllBtn = document.createElement('button');
+    selectAllBtn.type = 'button';
+    selectAllBtn.textContent = 'Select All';
+    selectAllBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.querySelectorAll('.multiselect-option input[type="checkbox"]').forEach(cb => {
+        if (cb.closest('.multiselect-option').style.display !== 'none') cb.checked = true;
+      });
+      onMultiselectChange(def.column, wrapper);
+    });
+    const clearBtn = document.createElement('button');
+    clearBtn.type = 'button';
+    clearBtn.textContent = 'Clear';
+    clearBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.querySelectorAll('.multiselect-option input[type="checkbox"]').forEach(cb => cb.checked = false);
+      onMultiselectChange(def.column, wrapper);
+    });
+    actionsBar.appendChild(selectAllBtn);
+    actionsBar.appendChild(clearBtn);
+    dropdown.appendChild(actionsBar);
+
     def.options.forEach(val => {
       const labelEl = document.createElement('label');
       labelEl.className = 'multiselect-option';

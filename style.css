@@ -493,6 +493,39 @@ body.dark #sort-dir-btn {
   top: 0;
 }
 
+.multiselect-actions {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid #ddd;
+  position: sticky;
+  top: 32px;
+  background: #fafafa;
+  z-index: 1;
+}
+
+.multiselect-actions button {
+  font-size: 0.65rem;
+  padding: 0.15rem 0.4rem;
+  background: #e0e0e0;
+  color: #333;
+  border-radius: 3px;
+}
+
+.multiselect-actions button:hover {
+  background: #ccc;
+}
+
+body.dark .multiselect-actions {
+  background: #16213e;
+  border-bottom-color: #0f3460;
+}
+
+body.dark .multiselect-actions button {
+  background: #0f3460;
+  color: #e0e0e0;
+}
+
 /* Tristate filter */
 .tristate-wrapper {
   display: flex;
