@@ -108,9 +108,11 @@
       options: ["Captain","Champion","Deploy","Fast","First Touch","Long Ball","Man-Marking","Playmaker","Resilience","Revitaliser","Shotblocking","Support","Teamwork","Tiki-Taka","Use Energy","Zonal Marking"] },
     { column: 'Ability 1 Text', type: 'text', label: 'Ability Text', group: 'Abilities',
       multi: ['Ability 1 Text', 'Ability 2 Text'] },
-    { column: 'Parallel', type: 'parallels-toggle', group: 'Advanced Options',
-      options: ['Base', '\u03B1/\u03B1', '#/77', '#/66', '#/44', '#/11', '\u03A9/\u03A9'] },
   ];
+
+  // Parallels toggle (rendered separately in Advanced section)
+  const PARALLELS_DEF = { column: 'Parallel', type: 'parallels-toggle',
+    options: ['Base', '\u03B1/\u03B1', '#/77', '#/66', '#/44', '#/11', '\u03A9/\u03A9'] };
 
   // ============================================================
   // STATE
@@ -124,6 +126,8 @@
   let sortAsc = true;
   let includeParallels = false;
   let clickThroughFilter = null; // { type: 'player'|'club'|'set', value: string }
+  let deck = []; // Array of card objects in the deck (max 20, exactly 1 GK)
+  let deckCardNums = new Set(); // Card numbers currently in deck (for fast lookup)
 
   // ============================================================
   // DOM REFERENCES
@@ -133,9 +137,11 @@
 
   const cardCountEl       = $('card-count');
   const refreshBtn        = $('refresh-btn');
-  const backBtn           = $('back-btn');
+  const ctBar             = $('click-through-bar');
+  const ctBackBtn         = $('ct-back-btn');
+  const ctLabel           = $('ct-label');
   const themeToggleBtn    = $('theme-toggle-btn');
-  const sortFieldSelect   = $('sort-field');
+  const sortFieldBtn      = $('sort-field-btn');
   const sortDirBtn        = $('sort-dir-btn');
   const filtersContainer  = $('filters-container');
   const cardListEl        = $('card-list');
@@ -145,6 +151,14 @@
   const exportFiltersBtn  = $('export-filters-btn');
   const importFiltersBtn  = $('import-filters-btn');
   const importFileInput   = $('import-file');
+  const deckPanel         = $('deck-panel');
+  const deckCountEl       = $('deck-count');
+  const deckListEl        = $('deck-list');
+  const clearDeckBtn      = $('clear-deck-btn');
+  const modeToggleEl      = $('mode-toggle');
+  const deckStatsPanel    = $('deck-stats-panel');
+  const deckStatsToggle   = $('deck-stats-toggle');
+  const deckStatsContent  = $('deck-stats-content');
 
   // ============================================================
   // INITIALIZATION
@@ -154,11 +168,22 @@
   let darkMode = localStorage.getItem('ttf_dark_mode') === 'true';
   applyTheme();
 
+  // Mode (deck building vs search)
+  let deckMode = true;
+  applyMode();
+
   // Event listeners
   themeToggleBtn.addEventListener('click', toggleTheme);
+  modeToggleEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('.seg-btn');
+    if (!btn) return;
+    deckMode = btn.dataset.mode === 'build';
+    applyMode();
+    renderCards();
+  });
   refreshBtn.addEventListener('click', loadSheet);
-  backBtn.addEventListener('click', exitClickThrough);
-  sortFieldSelect.addEventListener('change', () => { sortField = sortFieldSelect.value; applyFilters(); });
+  ctBackBtn.addEventListener('click', exitClickThrough);
+  sortFieldBtn.addEventListener('click', cycleSortField);
   sortDirBtn.addEventListener('click', toggleSortDir);
   clearFiltersBtn.addEventListener('click', clearAllFilters);
   saveFilterBtn.addEventListener('click', saveCurrentFilter);
@@ -166,6 +191,14 @@
   exportFiltersBtn.addEventListener('click', exportFilters);
   importFiltersBtn.addEventListener('click', () => importFileInput.click());
   importFileInput.addEventListener('change', importFilters);
+  clearDeckBtn.addEventListener('click', clearDeck);
+  deckStatsToggle.addEventListener('click', () => {
+    deckStatsContent.classList.toggle('collapsed');
+    deckStatsToggle.textContent = deckStatsContent.classList.contains('collapsed') ? '\u25B6' : '\u25BC';
+  });
+  document.querySelectorAll('.chart-selector').forEach(sel => {
+    sel.addEventListener('change', renderDeckStats);
+  });
 
   // Close open multiselect dropdowns on outside click
   document.addEventListener('click', (e) => {
@@ -176,7 +209,9 @@
 
   // Build UI and load data
   buildFilterUI();
+  buildAdvancedSection();
   renderSavedFilters();
+  renderDeck();
   loadSheet();
 
   // ============================================================
@@ -192,6 +227,14 @@
   function applyTheme() {
     document.body.classList.toggle('dark', darkMode);
     themeToggleBtn.textContent = darkMode ? '\u2600\uFE0F' : '\uD83C\uDF19';
+  }
+
+  function applyMode() {
+    deckPanel.classList.toggle('hidden', !deckMode);
+    deckStatsPanel.classList.toggle('visible', deckMode);
+    modeToggleEl.querySelectorAll('.seg-btn').forEach(btn => {
+      btn.classList.toggle('active', (btn.dataset.mode === 'build') === deckMode);
+    });
   }
 
   // ============================================================
@@ -389,7 +432,7 @@
       });
 
       section.appendChild(content);
-      if (groupName === 'Abilities' || groupName === 'Advanced Options') section.classList.add('collapsed');
+      if (groupName === 'Abilities') section.classList.add('collapsed');
       filtersContainer.appendChild(section);
     });
   }
@@ -644,6 +687,26 @@
     return div;
   }
 
+  function buildAdvancedSection() {
+    const advHeader = $('advanced-header');
+    const advContent = $('advanced-content');
+
+    // Collapse toggle
+    advHeader.addEventListener('click', () => {
+      advContent.classList.toggle('collapsed');
+      advHeader.querySelector('.filter-section-arrow').style.transform =
+        advContent.classList.contains('collapsed') ? 'rotate(-90deg)' : '';
+    });
+
+    // Render parallels toggle inside advanced content (prepend before saved filters)
+    const parallelsGroup = buildFilterControl(PARALLELS_DEF);
+    advContent.insertBefore(parallelsGroup, advContent.firstChild);
+
+    // Start collapsed
+    advContent.classList.add('collapsed');
+    advHeader.querySelector('.filter-section-arrow').style.transform = 'rotate(-90deg)';
+  }
+
   // ============================================================
   // FILTER EVENT HANDLERS
   // ============================================================
@@ -756,7 +819,24 @@
     sortCards();
     renderCards();
     updateFilterBadges();
-    backBtn.classList.toggle('hidden', !clickThroughFilter);
+    updateClickThroughBar();
+  }
+
+  function updateClickThroughBar() {
+    if (clickThroughFilter) {
+      ctBar.classList.remove('hidden');
+      const ct = clickThroughFilter;
+      if (ct.type === 'player') {
+        ctLabel.textContent = `Showing results for player: ${ct.value}`;
+      } else if (ct.type === 'club') {
+        ctLabel.textContent = `Showing results for club: ${ct.value}`;
+      } else if (ct.type === 'set') {
+        ctLabel.textContent = `Showing results for set: ${[ct.value.license, ct.value.set].filter(Boolean).join(' ')}`;
+      }
+    } else {
+      ctBar.classList.add('hidden');
+      ctLabel.textContent = '';
+    }
   }
 
   /** Match a card against the active click-through filter */
@@ -835,6 +915,23 @@
   // ============================================================
   // SORTING
   // ============================================================
+
+  const SORT_OPTIONS = [
+    { field: 'Card #', label: '#' },
+    { field: 'Name', label: 'A-Z' },
+    { field: 'Energy', label: '\u26A1' },
+    { field: 'Defence', label: 'DEF' },
+    { field: 'Skill', label: 'SKL' },
+    { field: 'Attack', label: 'ATK' },
+  ];
+  let sortIndex = 0; // Default: Card #
+
+  function cycleSortField() {
+    sortIndex = (sortIndex + 1) % SORT_OPTIONS.length;
+    sortField = SORT_OPTIONS[sortIndex].field;
+    sortFieldBtn.textContent = SORT_OPTIONS[sortIndex].label;
+    applyFilters();
+  }
 
   function toggleSortDir() {
     sortAsc = !sortAsc;
@@ -936,9 +1033,19 @@
     filteredCards.forEach(card => cardListEl.appendChild(buildCardElement(card)));
   }
 
-  function buildCardElement(card) {
+  function buildCardElement(card, skipDeckCheck) {
     const div = document.createElement('div');
     div.className = 'card';
+
+    const unavailable = !skipDeckCheck && deckMode && isCardUnavailable(card);
+    if (unavailable) {
+      div.classList.add('card-unavailable');
+    }
+
+    div.addEventListener('click', (e) => {
+      if (e.target.closest('.clickable')) return;
+      if (deckMode && !unavailable) addToDeck(card);
+    });
 
     // Parallel badge (top-right)
     const parallel = card['Parallel'] || 'Base';
@@ -1160,6 +1267,379 @@
         if (ma && filter.max != null) ma.value = filter.max;
       }
     }
+  }
+
+  // ============================================================
+  // DECK BUILDING
+  // ============================================================
+
+  function addToDeck(card) {
+    if (deck.length >= 20) return;
+    if (deckCardNums.has(card['Card #'])) return;
+
+    const isGK = card['Position'] === 'Goalkeeper';
+    const hasGK = deck.some(c => c['Position'] === 'Goalkeeper');
+
+    if (isGK && hasGK) return;
+    if (!isGK && !hasGK && deck.length >= 19) return;
+
+    deck.push(card);
+    deckCardNums.add(card['Card #']);
+    renderDeck();
+    renderCards();
+  }
+
+  function removeFromDeck(index) {
+    const removed = deck.splice(index, 1)[0];
+    deckCardNums.delete(removed['Card #']);
+    hideDeckPreview();
+    renderDeck();
+    renderCards();
+  }
+
+  function clearDeck() {
+    deck = [];
+    deckCardNums.clear();
+    renderDeck();
+    renderCards();
+  }
+
+  /** Check if a card should be greyed out (unavailable for deck) */
+  function isCardUnavailable(card) {
+    if (deck.length >= 20) return true;
+    if (deckCardNums.has(card['Card #'])) return true;
+    const isGK = card['Position'] === 'Goalkeeper';
+    const hasGK = deck.some(c => c['Position'] === 'Goalkeeper');
+    if (isGK && hasGK) return true;
+    return false;
+  }
+
+  function renderDeck() {
+    deckCountEl.textContent = `${deck.length} / 20`;
+    deckListEl.innerHTML = '';
+
+    // Separate GK from outfield and sort outfield by energy ascending
+    const gk = deck.find(c => c['Position'] === 'Goalkeeper') || null;
+    const outfield = deck.filter(c => c['Position'] !== 'Goalkeeper')
+      .sort((a, b) => Number(a['Energy'] || 0) - Number(b['Energy'] || 0));
+
+    // GK slot
+    if (gk) {
+      deckListEl.appendChild(buildDeckRow(gk, deck.indexOf(gk)));
+    } else {
+      deckListEl.appendChild(buildEmptySlot('GK'));
+    }
+
+    // Separator
+    const sep = document.createElement('div');
+    sep.className = 'deck-separator';
+    deckListEl.appendChild(sep);
+
+    // Outfield slots (19)
+    outfield.forEach(card => {
+      deckListEl.appendChild(buildDeckRow(card, deck.indexOf(card)));
+    });
+    const emptyOutfield = 19 - outfield.length;
+    for (let i = 0; i < emptyOutfield; i++) {
+      deckListEl.appendChild(buildEmptySlot());
+    }
+
+    renderDeckStats();
+  }
+
+  function buildEmptySlot(label) {
+    const row = document.createElement('div');
+    row.className = 'deck-row deck-row-empty';
+    const text = document.createElement('span');
+    text.className = 'deck-empty-label';
+    text.textContent = label || '';
+    row.appendChild(text);
+    return row;
+  }
+
+  function buildDeckRow(card, i) {
+      const row = document.createElement('div');
+      row.className = 'deck-row';
+
+      // Apply set color as left border
+      const setName = card['Set'] || '';
+      const setColor = SET_COLORS[setName];
+      if (setColor) {
+        row.style.borderLeft = `4px solid ${setColor.bg}`;
+      }
+
+      // Left side: Energy + Skill type icons (spans 2 lines)
+      const leftCol = document.createElement('div');
+      leftCol.className = 'deck-left';
+
+      const nrgEl = document.createElement('span');
+      nrgEl.className = 'deck-energy';
+      nrgEl.innerHTML = `\u26A1${card['Energy'] || '0'}`;
+      leftCol.appendChild(nrgEl);
+
+      const stBox = document.createElement('span');
+      stBox.className = 'deck-skill-types';
+      [card['Skill Type #1'], card['Skill Type #2']].forEach(st => {
+        if (st) {
+          const icon = document.createElement('img');
+          icon.src = SKILL_TYPE_ICONS[st] || '';
+          icon.alt = st;
+          icon.className = 'deck-st-icon';
+          stBox.appendChild(icon);
+        }
+      });
+      leftCol.appendChild(stBox);
+      row.appendChild(leftCol);
+
+      // Right side: two lines
+      const rightCol = document.createElement('div');
+      rightCol.className = 'deck-right';
+
+      // Top line: Player name
+      const nameEl = document.createElement('div');
+      nameEl.className = 'deck-name';
+      nameEl.textContent = `${card['First Name'] || ''} ${card['Second Name'] || ''}`.trim();
+      rightCol.appendChild(nameEl);
+
+      // Bottom line: Position + DEF/SKL/ATK
+      const bottomLine = document.createElement('div');
+      bottomLine.className = 'deck-bottom-line';
+
+      const posEl = document.createElement('span');
+      posEl.className = 'deck-pos';
+      posEl.textContent = POSITION_LABELS[card['Position']] || '?';
+      bottomLine.appendChild(posEl);
+
+      const statsEl = document.createElement('span');
+      statsEl.className = 'deck-stats-compact';
+      statsEl.innerHTML = `<span class="ds-def">${card['Defence'] || '0'}</span><span class="ds-skl">${card['Skill'] || '0'}</span><span class="ds-atk">${card['Attack'] || '0'}</span>`;
+      bottomLine.appendChild(statsEl);
+
+      rightCol.appendChild(bottomLine);
+      row.appendChild(rightCol);
+
+      // Parallel badge (right side)
+      const parallel = card['Parallel'] || 'Base';
+      if (parallel !== 'Base') {
+        const badge = document.createElement('span');
+        badge.className = 'deck-parallel';
+        badge.textContent = parallel;
+        row.appendChild(badge);
+      }
+
+      // Click to remove
+      row.addEventListener('click', () => removeFromDeck(i));
+
+      // Hover preview
+      row.addEventListener('mouseenter', () => showDeckPreview(card, row));
+      row.addEventListener('mouseleave', hideDeckPreview);
+
+      return row;
+  }
+
+  // --- Deck hover preview ---
+
+  let previewEl = null;
+
+  function showDeckPreview(card, rowEl) {
+    hideDeckPreview();
+    previewEl = buildCardElement(card, true);
+    previewEl.classList.add('deck-preview');
+
+    // Position to the left of the deck panel
+    document.body.appendChild(previewEl);
+    const rowRect = rowEl.getBoundingClientRect();
+    const previewRect = previewEl.getBoundingClientRect();
+    previewEl.style.top = `${Math.max(8, Math.min(rowRect.top, window.innerHeight - previewRect.height - 8))}px`;
+    previewEl.style.left = `${rowRect.left - previewRect.width - 8}px`;
+  }
+
+  function hideDeckPreview() {
+    if (previewEl) {
+      previewEl.remove();
+      previewEl = null;
+    }
+  }
+
+  // ============================================================
+  // DECK STATS
+  // ============================================================
+
+  function renderDeckStats() {
+    if (!deckMode) return;
+
+    const CHART_TITLES = {
+      'energy': 'Energy',
+      'skill-flip': 'Skill Flip',
+      'skill-type': 'Skill Types',
+      'attack': 'Attack',
+      'defence': 'Defence',
+      'position': 'Position',
+      'player-stack': 'Player Stack (Top 5)',
+      'set': 'Set (Top 5)',
+      'club': 'Club (Top 5)',
+      'ability': 'Ability (Top 5)',
+      'parallels': 'Parallels',
+    };
+
+    document.querySelectorAll('.deck-chart').forEach(chartEl => {
+      const selector = chartEl.querySelector('.chart-selector');
+      const container = chartEl.querySelector('.bar-chart');
+      const title = chartEl.querySelector('h4');
+      const chartType = selector.value;
+
+      title.textContent = CHART_TITLES[chartType] || chartType;
+
+      switch (chartType) {
+        case 'energy': {
+          const counts = {};
+          for (let i = 0; i <= 5; i++) counts[i] = 0;
+          deck.forEach(c => { counts[Number(c['Energy'] || 0)]++; });
+          renderBarChart(container, counts, '#b8860b');
+          break;
+        }
+        case 'skill-type': {
+          const counts = { Speed: 0, Accuracy: 0, Control: 0, Leadership: 0, Strength: 0 };
+          deck.forEach(c => {
+            if (c['Skill Type #1'] && counts[c['Skill Type #1']] != null) counts[c['Skill Type #1']]++;
+            if (c['Skill Type #2'] && counts[c['Skill Type #2']] != null) counts[c['Skill Type #2']]++;
+          });
+          renderBarChart(container, counts, null, {
+            Speed: '#e94560', Accuracy: '#40916c', Control: '#4a90d9', Strength: '#f0c040', Leadership: '#9b59b6'
+          });
+          break;
+        }
+        case 'skill-flip': {
+          const counts = {};
+          for (let i = 0; i <= 7; i++) counts[i] = 0;
+          deck.forEach(c => { counts[Number(c['Skill'] || 0)]++; });
+          renderBarChart(container, counts, '#d4a843');
+          break;
+        }
+        case 'attack': {
+          const counts = {};
+          for (let i = 0; i <= 10; i++) counts[i] = 0;
+          deck.forEach(c => { counts[Number(c['Attack'] || 0)]++; });
+          renderBarChart(container, counts, '#c0392b');
+          break;
+        }
+        case 'defence': {
+          const counts = {};
+          for (let i = 0; i <= 10; i++) counts[i] = 0;
+          deck.forEach(c => { counts[Number(c['Defence'] || 0)]++; });
+          renderBarChart(container, counts, '#2a6db5');
+          break;
+        }
+        case 'position': {
+          const counts = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+          const posMap = { Goalkeeper: 'GK', Defender: 'DEF', Midfielder: 'MID', Forward: 'FWD' };
+          deck.forEach(c => { const p = posMap[c['Position']]; if (p) counts[p]++; });
+          renderBarChart(container, counts, '#555');
+          break;
+        }
+        case 'player-stack': {
+          const counts = {};
+          deck.forEach(c => {
+            const name = `${c['First Name'] || ''} ${c['Second Name'] || ''}`.trim();
+            counts[name] = (counts[name] || 0) + 1;
+          });
+          const filtered = Object.entries(counts).filter(([, v]) => v >= 2).sort((a, b) => b[1] - a[1]).slice(0, 5);
+          renderListStat(container, filtered, 'No player stacks.');
+          break;
+        }
+        case 'set': {
+          const counts = {};
+          deck.forEach(c => {
+            const key = [c['License'], c['Set']].filter(Boolean).join(' ');
+            counts[key] = (counts[key] || 0) + 1;
+          });
+          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+          renderListStat(container, sorted);
+          break;
+        }
+        case 'club': {
+          const counts = {};
+          deck.forEach(c => { const club = c['Club']; if (club) counts[club] = (counts[club] || 0) + 1; });
+          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+          renderListStat(container, sorted);
+          break;
+        }
+        case 'ability': {
+          const counts = {};
+          deck.forEach(c => {
+            [c['Ability 1 Title'], c['Ability 2 Title']].forEach(a => {
+              if (a && a !== 'N/A') counts[a] = (counts[a] || 0) + 1;
+            });
+          });
+          const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+          renderListStat(container, sorted);
+          break;
+        }
+        case 'parallels': {
+          const counts = { 'Base': 0, '\u03B1/\u03B1': 0, '#/77': 0, '#/66': 0, '#/44': 0, '#/11': 0, '\u03A9/\u03A9': 0 };
+          deck.forEach(c => { const p = c['Parallel'] || 'Base'; if (counts[p] != null) counts[p]++; });
+          renderBarChart(container, counts, '#e94560');
+          break;
+        }
+      }
+    });
+  }
+
+  function renderListStat(container, entries, emptyMsg) {
+    container.innerHTML = '';
+    container.style.height = 'auto';
+    container.style.borderLeft = 'none';
+    container.style.borderBottom = 'none';
+
+    if (entries.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'stat-list-empty';
+      empty.textContent = emptyMsg || 'No data.';
+      container.appendChild(empty);
+      return;
+    }
+
+    const list = document.createElement('div');
+    list.className = 'stat-list';
+    entries.forEach(([label, count]) => {
+      const row = document.createElement('div');
+      row.className = 'stat-list-row';
+      row.innerHTML = `<span class="stat-list-label">${escapeHtml(label)}</span><span class="stat-list-count">${count}</span>`;
+      list.appendChild(row);
+    });
+    container.appendChild(list);
+  }
+
+  function renderBarChart(container, data, defaultColor, colorMap) {
+    container.innerHTML = '';
+    container.style.height = '';
+    container.style.borderLeft = '';
+    container.style.borderBottom = '';
+    const entries = Object.entries(data);
+    const maxVal = Math.max(...entries.map(([, v]) => v), 1);
+
+    entries.forEach(([label, count]) => {
+      const bar = document.createElement('div');
+      bar.className = 'bar-item';
+
+      const val = document.createElement('span');
+      val.className = 'bar-value';
+      val.textContent = count || '';
+      bar.appendChild(val);
+
+      const fill = document.createElement('div');
+      fill.className = 'bar-fill';
+      fill.style.height = `${(count / maxVal) * 100}%`;
+      fill.style.background = (colorMap && colorMap[label]) || defaultColor || '#4a90d9';
+      bar.appendChild(fill);
+
+      const lbl = document.createElement('span');
+      lbl.className = 'bar-label';
+      lbl.textContent = label;
+      bar.appendChild(lbl);
+
+      container.appendChild(bar);
+    });
   }
 
   // ============================================================
