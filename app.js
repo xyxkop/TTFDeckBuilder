@@ -76,6 +76,7 @@
     'Glow': { bg: '#111111', text: '#88ccff' },
     'Aeternus': { bg: '#ccdde8', text: '#aa8800' },
     'Eternal Gold': { bg: '#cc9900', text: '#ffffff' },
+    'Darkness': { bg: '#000000', text: '#666666' },
   };
 
   const POSITION_LABELS = { Goalkeeper: 'GK', Defender: 'DEF', Midfielder: 'MID', Forward: 'FWD' };
@@ -88,7 +89,7 @@
   const FILTERS = [
     { column: 'License', type: 'pills', group: 'Set', options: ['UCC', 'PL', 'MLS'] },
     { column: 'Set', type: 'multiselect', searchable: true, group: 'Set',
-      options: ["30th Anniversary","Aeternus","Baroque","Base","Birthday","Box Office","Chromium Base","Clarity","Classic","Collector's Reserve","Encrypted","Eternal Gold","Festive","First Class","Fusion","Gallery","Glow","Greatest Show","Halloween","He's Him","Iconic Numbers","Inferno","Legacy","Legends","Limited","Limited Edition","Master Magicians","Neon Noir","New Year","Next Goal Wins","One to Watch","Pitch to Dugout","Pro Pass","Record Breakers","Reign Supreme","Season Kick-off","Shatterpoint","Shockwave","Standout","Storm","Team of the Season","Terraces","Titanium","Total Performers","Vibrant Velocity","White Ice"] },
+      options: ["30th Anniversary","Aeternus","Baroque","Base","Birthday","Box Office","Chromium Base","Clarity","Classic","Collector's Reserve","Darkness","Encrypted","Eternal Gold","Festive","First Class","Fusion","Gallery","Glow","Greatest Show","Halloween","He's Him","Iconic Numbers","Inferno","Legacy","Legends","Limited","Limited Edition","Master Magicians","Neon Noir","New Year","Next Goal Wins","One to Watch","Pitch to Dugout","Pro Pass","Record Breakers","Reign Supreme","Season Kick-off","Shatterpoint","Shockwave","Standout","Storm","Team of the Season","Terraces","Titanium","Total Performers","Vibrant Velocity","White Ice"] },
     { column: 'First Name', type: 'text', label: 'Player Name', group: 'Player Info',
       multi: ['First Name', 'Second Name'] },
     { column: 'Club', type: 'multiselect', searchable: true, group: 'Player Info',

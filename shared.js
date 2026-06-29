@@ -76,6 +76,7 @@ const SET_COLORS = {
   'Glow': { bg: '#111111', text: '#88ccff' },
   'Aeternus': { bg: '#ccdde8', text: '#aa8800' },
   'Eternal Gold': { bg: '#cc9900', text: '#ffffff' },
+  'Darkness': { bg: '#000000', text: '#666666' },
 };
 
 // ============================================================
