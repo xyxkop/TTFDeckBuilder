@@ -179,6 +179,7 @@
   let sortAsc = true;
   let includeParallels = false;
   let clickThroughFilter = null; // { type: 'player'|'club'|'set', value: string }
+  let savedScrollPosition = 0;
   let deck = []; // Array of card objects in the deck (max 20, exactly 1 GK)
   let deckCardNums = new Set(); // Card numbers currently in deck (for fast lookup)
 
@@ -933,14 +934,20 @@
 
   /** Activate click-through mode */
   function activateClickThrough(type, value) {
+    // Save scroll position before navigating
+    savedScrollPosition = cardListEl.scrollTop;
     clickThroughFilter = { type, value };
     applyFilters();
+    // Scroll to top for the new view
+    cardListEl.scrollTop = 0;
   }
 
   /** Exit click-through mode, return to normal filtered view */
   function exitClickThrough() {
     clickThroughFilter = null;
     applyFilters();
+    // Restore previous scroll position
+    cardListEl.scrollTop = savedScrollPosition;
   }
 
   /** Check if a card matches a single filter */
