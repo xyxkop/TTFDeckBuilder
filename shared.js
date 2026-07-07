@@ -49,7 +49,6 @@ const SET_COLORS = {
   'Birthday': { bg: '#ff99cc', text: '#1a1a4e' },
   'Terraces': { bg: '#228833', text: '#ffffff' },
   'White Ice': { bg: '#e8f0ff', text: '#1a3366' },
-  'Limited': { bg: '#fffde6', text: '#996600' },
   'Iconic Numbers': { bg: '#ffffff', text: '#000000' },
   'Standout': { bg: '#ffffff', text: '#226622' },
   'Festive': { bg: '#aaffaa', text: '#cc0000' },

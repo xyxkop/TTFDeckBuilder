@@ -49,7 +49,6 @@
     'Birthday': { bg: '#ff99cc', text: '#1a1a4e' },
     'Terraces': { bg: '#228833', text: '#ffffff' },
     'White Ice': { bg: '#e8f0ff', text: '#1a3366' },
-    'Limited': { bg: '#fffde6', text: '#996600' },
     'Iconic Numbers': { bg: '#ffffff', text: '#000000' },
     'Standout': { bg: '#ffffff', text: '#226622' },
     'Festive': { bg: '#aaffaa', text: '#cc0000' },
@@ -81,6 +80,59 @@
 
   const POSITION_LABELS = { Goalkeeper: 'GK', Defender: 'DEF', Midfielder: 'MID', Forward: 'FWD' };
 
+  const SET_BACKGROUNDS = {
+    '30th Anniversary': 'backgrounds/30th_anniversary.jpg',
+    'Aeternus': 'backgrounds/aeternus.jpg',
+    'Baroque': 'backgrounds/baroque.jpg',
+    'Base_UCC': 'backgrounds/base.jpg',
+    'Base_MLS': 'backgrounds/base.jpg',
+    'Base_PL': 'backgrounds/base_pl.jpg',
+    'Birthday': 'backgrounds/birthday.jpg',
+    'Box Office': 'backgrounds/box_office.jpg',
+    'Chromium Base_UCC': 'backgrounds/chromium_base_ucc.jpg',
+    'Chromium Base_PL': 'backgrounds/chromium_base_pl.jpg',
+    'Clarity': 'backgrounds/clarity.jpg',
+    'Classic': 'backgrounds/classic.jpg',
+    "Collector's Reserve": 'backgrounds/collector.jpg',
+    'Darkness': 'backgrounds/darkness.jpg',
+    'Encrypted': 'backgrounds/encrypted.jpg',
+    'Eternal Gold': 'backgrounds/eternal_gold.jpg',
+    'Festive': 'backgrounds/festival.jpg',
+    'First Class': 'backgrounds/first_class.jpg',
+    'Fusion': 'backgrounds/fusion.jpg',
+    'Gallery': 'backgrounds/gallery.jpg',
+    'Glow': 'backgrounds/glow.jpg',
+    'Greatest Show': 'backgrounds/greatest_show.jpg',
+    'Halloween_PL': 'backgrounds/halloween_pl.jpg',
+    'Halloween_UCC': 'backgrounds/halloween_ucc.jpg',
+    "He's Him": 'backgrounds/hes_him.jpg',
+    'Iconic Numbers': 'backgrounds/iconic_numbers.jpg',
+    'Inferno': 'backgrounds/inferno.jpg',
+    'Legacy': 'backgrounds/legacy.jpg',
+    'Legends': 'backgrounds/legend.jpg',
+    'Limited Edition': 'backgrounds/limited_edition.jpg',
+    'Master Magicians': 'backgrounds/master_magicians.jpg',
+    'Neon Noir': 'backgrounds/neon_noir.jpg',
+    'New Year': 'backgrounds/new_year.jpg',
+    'Next Goal Wins': 'backgrounds/next_goal_wins.jpg',
+    'One to Watch': 'backgrounds/ones_to_watch.jpg',
+    'Pitch to Dugout': 'backgrounds/pitch_to_dugout.jpg',
+    'Pro Pass': 'backgrounds/propass.jpg',
+    'Record Breakers': 'backgrounds/record_breakers.jpg',
+    'Reign Supreme': 'backgrounds/reign_supreme.jpg',
+    'Season Kick-off': 'backgrounds/season_kickoff.jpg',
+    'Shatterpoint': 'backgrounds/shatterpoint.jpg',
+    'Shockwave': 'backgrounds/shockwave.jpg',
+    'Standout': 'backgrounds/standout.jpg',
+    'Storm': 'backgrounds/storm.jpg',
+    'Team of the Season': 'backgrounds/team_of_the_season.jpg',
+    'Terraces': 'backgrounds/terraces.jpg',
+    'Titanium': 'backgrounds/titanium.jpg',
+    'Total Performers': 'backgrounds/total_performers.jpg',
+    'Vibrant Velocity': 'backgrounds/vibrant_velocity.jpg',
+    'White Ice': 'backgrounds/white_ice.jpg',
+  };
+
   // ============================================================
   // FILTER DEFINITIONS
   // Each entry describes one filter control in the sidebar.
@@ -89,7 +141,7 @@
   const FILTERS = [
     { column: 'License', type: 'pills', group: 'Set', options: ['UCC', 'PL', 'MLS'] },
     { column: 'Set', type: 'multiselect', searchable: true, group: 'Set',
-      options: ["30th Anniversary","Aeternus","Baroque","Base","Birthday","Box Office","Chromium Base","Clarity","Classic","Collector's Reserve","Darkness","Encrypted","Eternal Gold","Festive","First Class","Fusion","Gallery","Glow","Greatest Show","Halloween","He's Him","Iconic Numbers","Inferno","Legacy","Legends","Limited","Limited Edition","Master Magicians","Neon Noir","New Year","Next Goal Wins","One to Watch","Pitch to Dugout","Pro Pass","Record Breakers","Reign Supreme","Season Kick-off","Shatterpoint","Shockwave","Standout","Storm","Team of the Season","Terraces","Titanium","Total Performers","Vibrant Velocity","White Ice"] },
+      options: ["30th Anniversary","Aeternus","Baroque","Base","Birthday","Box Office","Chromium Base","Clarity","Classic","Collector's Reserve","Darkness","Encrypted","Eternal Gold","Festive","First Class","Fusion","Gallery","Glow","Greatest Show","Halloween","He's Him","Iconic Numbers","Inferno","Legacy","Legends","Limited Edition","Master Magicians","Neon Noir","New Year","Next Goal Wins","One to Watch","Pitch to Dugout","Pro Pass","Record Breakers","Reign Supreme","Season Kick-off","Shatterpoint","Shockwave","Standout","Storm","Team of the Season","Terraces","Titanium","Total Performers","Vibrant Velocity","White Ice"] },
     { column: 'First Name', type: 'text', label: 'Player Name', group: 'Player Info',
       multi: ['First Name', 'Second Name'] },
     { column: 'Club', type: 'multiselect', searchable: true, group: 'Player Info',
@@ -165,8 +217,8 @@
   // INITIALIZATION
   // ============================================================
 
-  // Theme
-  let darkMode = localStorage.getItem('ttf_dark_mode') === 'true';
+  // Theme (temporarily disabled - forced light mode)
+  let darkMode = false;
   applyTheme();
 
   // Mode (deck building vs search)
@@ -174,7 +226,7 @@
   applyMode();
 
   // Event listeners
-  themeToggleBtn.addEventListener('click', toggleTheme);
+  if (themeToggleBtn) themeToggleBtn.addEventListener('click', toggleTheme);
   modeToggleEl.addEventListener('click', (e) => {
     const btn = e.target.closest('.seg-btn');
     if (!btn) return;
@@ -227,7 +279,7 @@
 
   function applyTheme() {
     document.body.classList.toggle('dark', darkMode);
-    themeToggleBtn.textContent = darkMode ? '\u2600\uFE0F' : '\uD83C\uDF19';
+    if (themeToggleBtn) themeToggleBtn.textContent = darkMode ? '\u2600\uFE0F' : '\uD83C\uDF19';
   }
 
   function applyMode() {
@@ -1063,6 +1115,19 @@
     const div = document.createElement('div');
     div.className = 'card';
 
+    // Set background image if available
+    const cardSetName = card['Set'] || '';
+    let bgKey = cardSetName;
+    if (cardSetName === 'Halloween') bgKey = card['License'] === 'PL' ? 'Halloween_PL' : 'Halloween_UCC';
+    if (cardSetName === 'Base') bgKey = card['License'] === 'PL' ? 'Base_PL' : (card['License'] === 'MLS' ? 'Base_MLS' : 'Base_UCC');
+    if (cardSetName === 'Chromium Base') bgKey = card['License'] === 'PL' ? 'Chromium Base_PL' : 'Chromium Base_UCC';
+    const bgImage = SET_BACKGROUNDS[bgKey];
+    if (bgImage) {
+      div.style.backgroundImage = `linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.2)), url(${bgImage})`;
+      div.style.backgroundSize = 'cover';
+      div.style.backgroundPosition = 'center';
+    }
+
     const unavailable = !skipDeckCheck && deckMode && isCardUnavailable(card);
     if (unavailable) {
       div.classList.add('card-unavailable');
@@ -1097,7 +1162,10 @@
     setEl.appendChild(setTextSpan);
     div.appendChild(setEl);
 
-    // Player name (text clickable)
+    // Player info section (name + club with translucent layer)
+    const playerInfo = document.createElement('div');
+    playerInfo.className = 'card-player-info';
+
     const nameEl = document.createElement('div');
     nameEl.className = 'card-name';
     const fullName = `${card['First Name'] || ''} ${card['Second Name'] || ''}`.trim() || '(unnamed)';
@@ -1106,7 +1174,7 @@
     nameSpan.textContent = fullName;
     nameSpan.addEventListener('click', () => activateClickThrough('player', fullName));
     nameEl.appendChild(nameSpan);
-    div.appendChild(nameEl);
+    playerInfo.appendChild(nameEl);
 
     // Club (text clickable)
     if (card['Club']) {
@@ -1117,8 +1185,10 @@
       clubSpan.textContent = card['Club'];
       clubSpan.addEventListener('click', () => activateClickThrough('club', card['Club']));
       clubEl.appendChild(clubSpan);
-      div.appendChild(clubEl);
+      playerInfo.appendChild(clubEl);
     }
+
+    div.appendChild(playerInfo);
 
     // Bottom section: 3-column layout (stats | info | abilities)
     const bottomEl = document.createElement('div');
@@ -1167,10 +1237,19 @@
 
     div.appendChild(bottomEl);
 
-    // Card number (footer)
+    // Card number (footer) — color based on background brightness
     const cardNumEl = document.createElement('div');
     cardNumEl.className = 'card-number';
     cardNumEl.textContent = card['Card #'] || '';
+    const numSetColor = SET_COLORS[card['Set']];
+    if (bgImage && numSetColor && isLightColor(numSetColor.text)) {
+      cardNumEl.style.color = '#fff';
+    }
+    // Override for sets with dark background images but dark text colors
+    const darkBgSets = ['Storm', 'Reign Supreme', 'Darkness', 'Neon Noir', 'Titanium', 'Vibrant Velocity', 'Encrypted', 'Baroque', 'First Class', '30th Anniversary', 'Glow', 'Greatest Show', 'New Year', 'Season Kick-off', 'Shockwave', 'Next Goal Wins', 'Legends'];
+    if (bgImage && darkBgSets.includes(card['Set'])) {
+      cardNumEl.style.color = '#fff';
+    }
     div.appendChild(cardNumEl);
 
     return div;
@@ -1187,7 +1266,7 @@
     if (!title || title === 'N/A') return;
     const el = document.createElement('div');
     el.className = 'card-ability';
-    el.innerHTML = `<strong>${escapeHtml(title)}</strong>${text && text !== 'N/A' ? ' <span>' + escapeHtml(text) + '</span>' : ''}`;
+    el.innerHTML = `<strong>${escapeHtml(title)}</strong>${text && text !== 'N/A' ? '<br><span>' + escapeHtml(text) + '</span>' : ''}`;
     container.appendChild(el);
   }
 
@@ -1387,12 +1466,26 @@
       const row = document.createElement('div');
       row.className = 'deck-row';
 
-      // Apply set color as left border
+      // Apply set color as left border and background image
       const setName = card['Set'] || '';
       const setColor = SET_COLORS[setName];
       if (setColor) {
         row.style.borderLeft = `4px solid ${setColor.bg}`;
       }
+      let deckBgKey = setName;
+      if (setName === 'Halloween') deckBgKey = card['License'] === 'PL' ? 'Halloween_PL' : 'Halloween_UCC';
+      if (setName === 'Base') deckBgKey = card['License'] === 'PL' ? 'Base_PL' : (card['License'] === 'MLS' ? 'Base_MLS' : 'Base_UCC');
+      if (setName === 'Chromium Base') deckBgKey = card['License'] === 'PL' ? 'Chromium Base_PL' : 'Chromium Base_UCC';
+      const bgImage = SET_BACKGROUNDS[deckBgKey];
+      if (bgImage) {
+        row.style.backgroundImage = `linear-gradient(rgba(255,255,255,0.2), rgba(255,255,255,0.2)), url(${bgImage})`;
+        row.style.backgroundSize = 'cover';
+        row.style.backgroundPosition = 'center';
+      }
+
+      // Content wrapper (white layer over background)
+      const contentWrapper = document.createElement('div');
+      contentWrapper.className = 'deck-content';
 
       // Left side: Energy + Skill type icons (spans 2 lines)
       const leftCol = document.createElement('div');
@@ -1415,7 +1508,7 @@
         }
       });
       leftCol.appendChild(stBox);
-      row.appendChild(leftCol);
+      contentWrapper.appendChild(leftCol);
 
       // Right side: two lines
       const rightCol = document.createElement('div');
@@ -1442,7 +1535,8 @@
       bottomLine.appendChild(statsEl);
 
       rightCol.appendChild(bottomLine);
-      row.appendChild(rightCol);
+      contentWrapper.appendChild(rightCol);
+      row.appendChild(contentWrapper);
 
       // Parallel badge (right side)
       const parallel = card['Parallel'] || 'Base';
@@ -1713,6 +1807,14 @@
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  /** Returns true if a hex color is light (closer to white) */
+  function isLightColor(hex) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return (r * 299 + g * 587 + b * 114) / 1000 > 160;
   }
 
   /** Strip diacritics and lowercase for accent-insensitive matching */
